@@ -1,4 +1,17 @@
 
+---
+
+## ❤️ Support This Project
+
+If you enjoy Master Notify Dashboard Edition and would like to support its development, consider buying me a coffee! ☕
+
+Your support helps me maintain the project, fix bugs, and develop new features.
+
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-Support_My_Work-FF5E5B?style=for-the-badge&logo=kofi&logoColor=white)](https://ko-fi.com/xsas1337)
+
+Every contribution is appreciated. Thank you for your support! ❤️
+
+
 # 🔔 Master Notify – Dashboard Edition
 
 An enhanced Home Assistant notification blueprint with integrated dashboard history.
