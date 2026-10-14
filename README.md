@@ -11,244 +11,115 @@ Your support helps me maintain the project, fix bugs, and develop new features.
 
 Every contribution is appreciated. Thank you for your support! ❤️
 
-
 # 🔔 Master Notify – Dashboard Edition
 
-An enhanced Home Assistant notification blueprint with integrated dashboard history.
+**One central notification script for Home Assistant, with optional dashboard history.**
 
-Based on the original **Master Notify** blueprint by [FourtyNos](https://github.com/FourtyNos).
+[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Script%20Blueprint-41BDF5?logo=homeassistant&logoColor=white)](https://www.home-assistant.io/)
+[![GitHub](https://img.shields.io/badge/GitHub-Source-181717?logo=github)](https://github.com/xsasx/Master-Notify-Dashboard-Edition)
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-Support%20this%20fork-FF5E5B?logo=kofi&logoColor=white)](https://ko-fi.com/xsas1337)
 
-This edition adds persistent notification history for Home Assistant dashboards while preserving the original notification functionality.
+This is a community fork of [Master Notify by FourtyNos](https://github.com/FourtyNos/master_notify). It keeps the centralized notification approach and adds **optional history of the two most recent notifications**, useful for Home Assistant dashboards.
 
-> 🚧 **Beta Status**
->
-> Push notifications and dashboard history have been successfully tested.
-> Alexa and Google TTS functionality are included from the original blueprint but have not yet been fully retested in this edition.
-
----
+> **Status:** The fork's blueprint was imported successfully into Home Assistant, and mobile push delivery plus writing the latest-notification helper were tested. The previous-notification helper, Alexa, TTS, critical alerts, and volume restoration have not yet been independently verified for this release.
 
 ## ✨ Features
 
-### Original Master Notify Features
+- 📱 Send mobile push notifications to configurable **Admin** and **Family** device groups.
+- 🔊 Send announcements to configured **Alexa notify entities**.
+- 🗣️ Use a configured **TTS provider** with media players.
+- 🚨 Request critical push notifications (subject to device/platform support).
+- 🎚️ Configure normal and critical announcement volume, with an attempt to restore previous media-player volumes.
+- 🕘 **Optional dashboard history:** save the latest and previous notification in two Home Assistant `input_text` helpers.
+- 🧩 Use the same central script from many automations.
 
-- 📱 Mobile push notifications
-- 👨‍👩‍👧‍👦 Separate admin and family notification groups
-- 🔊 Alexa announcements
-- 🗣️ Google Text-to-Speech support
-- 🚨 Critical notifications
-- 🔉 Automatic volume adjustment
-- 🔄 Restore previous media player volume
-- ⚙️ Centralized notification management
+## 📥 Install the blueprint
 
-### New Dashboard Edition Features
+[![Import Blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fxsasx%2FMaster-Notify-Dashboard-Edition%2Fblob%2Fmain%2FMaster_Notify.yaml)
 
-- 🔔 Automatically stores the latest notification
-- 📝 Remembers the previous notification
-- 🕒 Includes timestamps for every stored notification
-- 📊 Displays notifications directly in a Home Assistant dashboard
-- 📂 Expandable notification history
-- 📜 24-hour notification history using Home Assistant Logbook
-- 🔄 Automatically updates when a new notification is sent
-- 🧩 Compatible with existing Master Notify automations
+1. Click **Import Blueprint** above, or open **Settings → Automations & scenes → Blueprints → Import Blueprint** in Home Assistant.
+2. Paste this URL if importing manually:
 
-No changes to existing automations are required when replacing the original blueprint configuration while keeping the same script entity.
+   `https://github.com/xsasx/Master-Notify-Dashboard-Edition/blob/main/Master_Notify.yaml`
 
----
+3. Confirm the import.
+4. Open **Settings → Automations & scenes → Scripts**, create a script **from the imported blueprint**, and select your devices and optional TTS settings.
+5. Save the script. Note its entity ID (for example, `script.master_notify`). Your actual ID may differ.
 
-## 📸 Dashboard Preview
+**Requirements:** Home Assistant **2025.12.0 or newer**, as specified by the blueprint. Mobile notifications require the Home Assistant Companion App and correctly registered mobile devices. Alexa and TTS features require the corresponding working integrations and entities.
 
-The dashboard card displays the two most recent notifications even when collapsed.
+## ⚙️ Blueprint configuration
 
-When expanded, the Home Assistant Logbook shows notification history from the last 24 hours.
+| Option | Purpose |
+|---|---|
+| **Enable dashboard history** | Optional; disabled by default. Requires the two helpers below. |
+| **Admin User Devices** | Home Assistant mobile-app devices receiving Admin notifications. |
+| **Family User Devices** | Home Assistant mobile-app devices receiving Family notifications. |
+| **Normal volume** | Default media-player volume for non-critical announcements (0.0–1.0). |
+| **Critical volume** | Media-player volume for critical announcements (0.0–1.0). |
+| **alexa devices** | Alexa notification entities used by your Alexa integration. |
+| **tts provider** | TTS entity such as `tts.google_translate`, if available. |
+| **Google and other TTS Devices** | Media players for TTS playback. |
 
-Screenshots will be added in a future update.
+You can use mobile push without configuring Alexa or TTS. The dashboard history is **not required** for ordinary notifications.
 
----
+## 🕘 Optional dashboard history
 
-## 📋 Requirements
+If you want the latest two notifications displayed in Home Assistant, create **two Text helpers** first:
 
-- Home Assistant
-- Original Master Notify blueprint functionality
-- Two Home Assistant Text Helpers
-- Home Assistant Recorder and Logbook
-- Custom Expander Card for the dashboard
+**Settings → Devices & services → Helpers → Create helper → Text**
 
-### Required Custom Card
+| Suggested helper name | Required entity ID | Maximum length |
+|---|---|---|
+| Master Notify – Latest Notification | `input_text.master_notify_letzte_meldung` | 255 |
+| Master Notify – Previous Notification | `input_text.master_notify_vorletzte_meldung` | 255 |
 
-Install **Expander Card** using HACS:
+The entity IDs must match **exactly**. If Home Assistant creates different IDs, edit the helper entity IDs before enabling history. Set the maximum length to **255 characters** for each helper.
 
-https://github.com/Alia5/lovelace-expander-card
-
-The dashboard configuration uses:
-
-`custom:expander-card`
-
----
-
-## 🚀 Installation
-
-### Step 1 – Download the Blueprint
-
-Download the Dashboard Edition blueprint from this repository:
-
-https://github.com/xsasx/Master-Notify-Dashboard-Edition
-
-Copy the blueprint YAML file to:
-
-```text
-/config/blueprints/script/custom/Master_Notify_2.yaml
-```
-
-Alternatively, import the blueprint through Home Assistant once a stable release and direct import link are available.
-
-### Step 2 – Create the Text Helpers
-
-Open Home Assistant:
-
-**Settings → Devices & Services → Helpers → Create Helper → Text**
-
-Create the following two helpers.
-
-**Helper 1 – Latest Notification**
+Alternatively, create them in YAML (only if you manage `input_text` in YAML):
 
 ```yaml
 input_text:
   master_notify_letzte_meldung:
-    name: Master Notify - Latest Notification
+    name: Master Notify – Latest Notification
     max: 255
-```
-
-**Helper 2 – Previous Notification**
-
-```yaml
-input_text:
   master_notify_vorletzte_meldung:
-    name: Master Notify - Previous Notification
+    name: Master Notify – Previous Notification
     max: 255
 ```
 
-The YAML above illustrates the required entity IDs.
+**Do not add a second `input_text:` root key if one already exists**; merge the entries into your existing configuration instead. Restart Home Assistant if you create the helpers through YAML.
 
-If you create the helpers through the Home Assistant UI, you do not need to add this YAML to your configuration.
+Then edit the script created from the blueprint and enable **Enable dashboard history**.
 
-Make sure the resulting entity IDs are exactly:
+When the script runs, it copies the former latest notification to the previous helper and writes a new entry with date, time, title, and message to the latest helper. Each entry is truncated to 255 characters. The two helpers store the **last two calls**, not a permanent event archive. The blueprint uses `continue_on_error` for the history writes; if helpers are missing, notifications may still work, but history will not be recorded correctly.
 
-```text
-input_text.master_notify_letzte_meldung
-input_text.master_notify_vorletzte_meldung
-```
+### Example dashboard card
 
-Both helpers should allow up to 255 characters.
-
-### Step 3 – Configure the Script
-
-Create a script using the imported Dashboard Edition blueprint.
-
-If you are migrating from the original Master Notify blueprint, keep the existing script entity ID.
-
-Example:
+Add this **Markdown card** to any Home Assistant dashboard:
 
 ```yaml
-master_notify:
-  alias: Master Notify
-  use_blueprint:
-    path: custom/Master_Notify_2.yaml
-    input:
-      user_group_admins:
-        - YOUR_MOBILE_APP_DEVICE_ID
-      tts_provider: tts.google_ai_tts
-      tts_group_devices:
-        - media_player.your_speakers
+type: markdown
+title: 🔔 Master Notify History
+content: >-
+  **Latest notification**
+
+  {{ states('input_text.master_notify_letzte_meldung') }}
+
+  **Previous notification**
+
+  {{ states('input_text.master_notify_vorletzte_meldung') }}
 ```
 
-Replace the example device ID and media player with your own configuration.
+## 🚀 Send a notification from an automation
 
-Existing blueprint inputs should be preserved when migrating.
-
-Reload scripts after updating the configuration.
-
----
-
-## 📊 Dashboard Configuration
-
-Add a new card to your Home Assistant dashboard.
-
-Select **Manual Card** and paste the following YAML.
-
-```yaml
-type: custom:expander-card
-expanded: false
-clear: false
-title-card:
-  type: markdown
-  content: >-
-    {% set latest = states('input_text.master_notify_letzte_meldung') %}
-    {% set previous = states('input_text.master_notify_vorletzte_meldung') %}
-    {% set invalid = ['unknown', 'unavailable', 'none', ''] %}
-
-    ### 🔔 Notifications
-
-    {% if latest not in invalid %}
-      {% set p = latest.split(' | ', 2) %}
-      {% if p | length == 3 %}
-    **{{ p[1] }}** · {{ p[0] }}
-
-    {{ p[2] }}
-      {% else %}
-    {{ latest }}
-      {% endif %}
-    {% else %}
-    No notifications available.
-    {% endif %}
-
-    {% if previous not in invalid and previous != latest %}
-
-    ---
-
-      {% set p = previous.split(' | ', 2) %}
-      {% if p | length == 3 %}
-    **{{ p[1] }}** · {{ p[0] }}
-
-    {{ p[2] }}
-      {% else %}
-    {{ previous }}
-      {% endif %}
-    {% endif %}
-cards:
-  - type: logbook
-    title: 📜 Notification History - Last 24 Hours
-    entities:
-      - input_text.master_notify_letzte_meldung
-    hours_to_show: 24
-```
-
-### Dashboard Behavior
-
-**Collapsed:**
-
-Displays the latest two notifications, including timestamp, title and message.
-
-**Expanded:**
-
-Displays the same notifications and an additional 24-hour Logbook history.
-
-The Logbook tracks only the latest-notification helper to avoid duplicate history entries.
-
----
-
-## 🧪 Test Notification
-
-Open:
-
-**Developer Tools → Actions**
-
-Execute:
+Once your script is saved, use its actual entity ID. For example:
 
 ```yaml
 action: script.master_notify
 data:
-  title: "🔔 Dashboard Edition Test"
-  message: "This is a test notification from Master Notify Dashboard Edition."
+  title: "🔔 Home Assistant"
+  message: "The notification blueprint is working!"
   group_admins_enable: true
   group_family_enable: false
   alexa_enabled: false
@@ -256,171 +127,49 @@ data:
   critical_enabled: false
 ```
 
-Expected result:
+For a family notification, set `group_family_enable: true`. For Alexa or TTS announcements, configure the appropriate devices in the script and set `alexa_enabled` or `google_enabled` to `true` for the call.
 
-1. A push notification is sent to the configured admin devices.
-2. The latest notification helper is updated.
-3. The previous notification is moved to the previous-notification helper.
-4. The dashboard updates automatically.
-5. The Logbook records the new notification.
-
----
-
-## ⚙️ How It Works
-
-The Dashboard Edition adds two actions to the original Master Notify script sequence.
-
-**First action:**
-
-Copies the previously stored latest notification to:
-
-```text
-input_text.master_notify_vorletzte_meldung
-```
-
-**Second action:**
-
-Stores the current notification in:
-
-```text
-input_text.master_notify_letzte_meldung
-```
-
-Each stored notification uses this format:
-
-```text
-DD.MM.YYYY HH:MM | Notification Title | Notification Message
-```
-
-Example:
-
-```text
-13.10.2026 16:50 | ⚡ UPS Battery | Power outage detected!
-```
-
-The stored text is limited to 255 characters per helper.
-
-The dashboard parses the stored text and displays its timestamp, title and message.
-
-### Important Limitations
-
-- Notifications longer than 255 characters are truncated in the helpers.
-- The dashboard stores only the two most recent notifications as helper states.
-- Older notifications depend on Home Assistant Recorder and Logbook retention.
-- The Logbook history is not a separate permanent notification database.
-- The timestamp format currently follows `DD.MM.YYYY HH:MM`.
-- Notifications are stored when the script runs, even if a downstream delivery service subsequently fails.
-- Alexa and Google TTS compatibility still require additional testing.
-
----
-
-## 🔄 Migration From Original Master Notify
-
-If you already use Master Notify, you do not need to update every automation.
-
-Simply change the blueprint path in your existing script configuration.
-
-**Original:**
-
-```yaml
-path: FourtyNos/Master_Notify.yaml
-```
-
-**Dashboard Edition:**
-
-```yaml
-path: custom/Master_Notify_2.yaml
-```
-
-Keep your existing script name and blueprint inputs.
-
-For example, automations calling:
+### Critical notification example
 
 ```yaml
 action: script.master_notify
+data:
+  title: "🚨 Important alert"
+  message: "Please check Home Assistant."
+  group_admins_enable: true
+  group_family_enable: false
+  alexa_enabled: false
+  google_enabled: false
+  critical_enabled: true
 ```
 
-will continue using the same script entity.
+Critical push behavior depends on the mobile platform, its permissions, and notification configuration. Test on your own devices before relying on it for emergencies.
 
-Always create a backup before changing your configuration.
+## 🧪 Testing
 
----
+1. Save a script from the blueprint with at least one Admin mobile device.
+2. In **Developer tools → Actions**, run the first example, using your script's actual entity ID.
+3. Confirm that the mobile push arrives.
+4. If history is enabled, check the two `input_text` entities in **Developer tools → States**.
+5. Run a second distinct notification and verify that the first moves to the previous-notification helper.
+6. Test Alexa, TTS, critical delivery, and volume restoration separately if you plan to use them.
 
 ## 🛠️ Troubleshooting
 
-### Notifications are not displayed
+**No push received:** Check that the selected mobile device is registered, notifications are permitted, and the Admin/Family flag for the call is enabled.
 
-Check whether both Text Helpers exist and have the correct entity IDs.
+**History is empty or `unknown`:** Check that both helpers exist with the exact entity IDs above, and that **Enable dashboard history** is enabled in the script's blueprint configuration.
 
-### Push notifications work, but dashboard history does not
+**Wrong script name:** Replace `script.master_notify` in the examples with the entity ID of the script you actually created.
 
-Verify that the script uses the Dashboard Edition blueprint rather than the original version.
+**No Alexa/TTS announcement:** Verify the integration, notify entities, TTS provider, media players, and corresponding enabled flags. These integrations may have platform-specific requirements.
 
-Reload your scripts after changing the blueprint.
+**Updating:** Replace or re-import the blueprint from this repository and check the existing script's blueprint configuration. Back up your Home Assistant configuration before making changes.
 
-### The script is unavailable
+## 🙏 Credits and support
 
-Check your Home Assistant configuration and reload scripts using:
+- **Original project:** [FourtyNos/master_notify](https://github.com/FourtyNos/master_notify) — original blueprint and centralized notification logic.
+- **Dashboard Edition fork:** [xsasx/Master-Notify-Dashboard-Edition](https://github.com/xsasx/Master-Notify-Dashboard-Edition) — optional dashboard history and fork maintenance.
+- ☕ [Support this fork on Ko-fi](https://ko-fi.com/xsas1337).
 
-```yaml
-action: script.reload
-data: {}
-```
-
-### No history appears in Logbook
-
-Ensure that Recorder and Logbook are enabled and that the helper entity is not excluded from recording.
-
-### Dashboard card is not displayed
-
-Ensure the custom Expander Card is installed and its frontend resource is loaded.
-
----
-
-## 🗺️ Roadmap
-
-- [x] Preserve original Master Notify functionality in the blueprint
-- [x] Store latest notification
-- [x] Store previous notification
-- [x] Display two notifications in a collapsed dashboard card
-- [x] Add expandable Logbook history
-- [x] Test mobile push notifications
-- [x] Test notification helper updates
-- [ ] Retest Alexa announcements
-- [ ] Retest Google TTS
-- [ ] Add dashboard screenshots
-- [ ] Improve localization
-- [ ] Make helper entity IDs configurable
-- [ ] Publish first beta release
-
----
-
-## 🙏 Credits
-
-This project is based on the original **Master Notify** blueprint created by **FourtyNos**.
-
-Original project:
-
-https://github.com/FourtyNos
-
-Dashboard Edition maintained by:
-
-**xsasx**
-
-https://github.com/xsasx/Master-Notify-Dashboard-Edition
-
-All credit for the original Master Notify implementation belongs to its original author.
-
-Please review the original project's licensing terms before redistributing modified versions.
-
----
-
-## ⚠️ Disclaimer
-
-This project is currently in beta.
-
-It has been tested with Home Assistant using mobile push notifications and dashboard notification history.
-
-Other notification methods, including Alexa and Google TTS, require further validation.
-
-Use at your own risk and keep a backup of your existing configuration.
+This fork is community-maintained and is not an official Home Assistant integration. Please retain attribution to the original project when redistributing modified versions.
