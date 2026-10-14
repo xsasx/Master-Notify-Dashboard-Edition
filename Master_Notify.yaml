@@ -1,376 +1,304 @@
 blueprint:
-  name: "Master Notify (V1.2.0)"
-  description: |
-    <div>
-    <b>Version 1.2.0</b> | 
-    <a href="https://github.com/FourtyNos/master_notify" target="_blank">Github Link</a> |
-    <a href="https://ko-fi.com/techindustries" target="_blank">Support me on Ko-Fi</a>
-    </div>
-
-    Centralized notification management system for automations. Configure device groups
-    (Admin, Family) once and send notifications to mobile apps, Alexa devices, and TTS
-    speakers with customizable critical alerts and volume control.
-  source_url: https://github.com/FourtyNos/master_notify/master_notify.yaml
+  name: Master Notify – Dashboard Edition
+  description: >-
+    <b>Dashboard Edition</b> | <a href="https://github.com/xsasx/Master-Notify-Dashboard-Edition">GitHub</a> |
+    <a href="https://ko-fi.com/xsas1337">Support this fork</a><br>
+    Based on Master Notify by FourtyNos. Centralized notifications for mobile devices,
+    Alexa and TTS with optional dashboard history, critical alerts and volume control.
+  source_url: https://raw.githubusercontent.com/xsasx/Master-Notify-Dashboard-Edition/main/Master_Notify.yaml
   homeassistant:
     min_version: 2025.12.0
-  author: Fourtynos/master_notify
+  author: xsasx (Dashboard Edition; based on FourtyNos/master_notify)
   domain: script
-
   input:
+    dashboard_history_enabled:
+      name: Enable dashboard history
+      description: >-
+        Optional. Requires input_text.master_notify_letzte_meldung and
+        input_text.master_notify_vorletzte_meldung to exist in Home Assistant.
+        Leave disabled if you do not use the dashboard history.
+      default: false
+      selector:
+        boolean: {}
     user_group_admins:
       name: Admin User Devices
-      description: "choose Admin Devices (just mobile_app Devices)."
+      description: choose Admin Devices (just mobile_app Devices).
       default: []
       selector:
         device:
           integration: mobile_app
           multiple: true
-
     user_group_family:
       name: Family User Devices
-      description: "choose Family Devices (just mobile_app Devices)."
+      description: choose Family Devices (just mobile_app Devices).
       default: []
       selector:
         device:
           integration: mobile_app
           multiple: true
-
-   # --- Volume Settings ---
     volume_settings:
       name: Volume Control
       description: Configure default volume levels for this blueprint.
       icon: mdi:volume-high
       collapsed: false
       input:
-
         volume_normal:
           name: Normal volume
           description: Volume used for non-critical playback (0.0 - 1.0).
           default: 0.5
           selector:
             number:
-              min: 0
-              max: 1
+              min: 0.0
+              max: 1.0
               step: 0.05
               mode: slider
-
         volume_critical:
           name: Critical volume
           description: Volume used when critical is enabled (0.0 - 1.0).
           default: 0.8
           selector:
             number:
-              min: 0
-              max: 1
+              min: 0.0
+              max: 1.0
               step: 0.05
               mode: slider
-
     alexa_group_devices:
       name: alexa devices
-      description: "choose alexa Devices (just notify alexa/ core integration)."
+      description: choose alexa Devices (just notify alexa/ core integration).
       default: []
       selector:
         entity:
-          domain: notify
+          domain:
+          - notify
           multiple: true
-
+          reorder: false
     tts_provider:
       name: tts provider
-      description: "choose the TTS provider for example: tts.google_translate."
+      description: 'choose the TTS provider for example: tts.google_translate.'
       default: []
       selector:
         entity:
-          domain: tts
+          domain:
+          - tts
           multiple: false
-
+          reorder: false
     tts_group_devices:
       name: Google and other TTS Devices
-      description: "choose TTS Devices (just TTS / media_player)."
+      description: choose TTS Devices (just TTS / media_player).
       default: []
       selector:
         entity:
-          domain: media_player
+          domain:
+          - media_player
           multiple: true
-
+          reorder: false
 fields:
-  # Text Inputs
   title:
     name: title
     selector:
-      text: null
-
+      text:
   message:
     name: message
     required: false
     selector:
       text:
         multiline: true
-
   field_data:
     name: Data
     default: {}
     required: false
     advanced: true
-    description: >-
-      Optional extras like: 
-      notification_icon: mdi:trash-can
-      persistent: true
-      tag: trash
+    description: 'Optional extras like:  notification_icon: mdi:trash-can persistent:
+      true tag: trash'
     selector:
       object: {}
-
-  # Booleans
   group_admins_enable:
     name: Send to Admin group
     required: true
     selector:
       boolean: {}
-
   group_family_enable:
     name: Send to Family group
     required: true
     selector:
       boolean: {}
-
   alexa_enabled:
     name: Send to Alexa group
     required: true
     selector:
       boolean: {}
-
   google_enabled:
     name: Google & other (TTS)
     description: Devices that use TTS instead of notify
     required: true
     selector:
       boolean: {}
-
   critical_enabled:
     name: critical
     required: true
     selector:
       boolean: {}
-
 sequence:
-  # push_data for iOS critical
-  - variables:
-      push_data: >-
-        {{ {'push': {'sound': {'name': 'default', 'critical': 1, 'volume': 1.0}}} if critical_enabled else {} }}
-    alias: push_data Variable, for the "Critical" channel on iPhones
+- variables:
+    dashboard_history_enabled: !input dashboard_history_enabled
+- if:
+    - condition: template
+      value_template: "{{ dashboard_history_enabled | bool(false) }}"
+  then:
+    - alias: "Dashboard - Vorletzte Meldung speichern"
+      continue_on_error: true
+      action: input_text.set_value
+      target:
+        entity_id: input_text.master_notify_vorletzte_meldung
+      data:
+        value: >-
+          {{ states('input_text.master_notify_letzte_meldung')[:255] }}
+    - alias: "Dashboard - Letzte Meldung speichern"
+      continue_on_error: true
+      action: input_text.set_value
+      target:
+        entity_id: input_text.master_notify_letzte_meldung
+      data:
+        value: >-
+          {% set t = title | default('Benachrichtigung', true) | string %}
+          {% set m = message | default('', true) | string %}
+          {% set s = now().strftime('%d.%m.%Y %H:%M') ~ ' | ' ~ t ~ ' | ' ~ m %}
+          {{ s[:255] }}
 
-  # gather input variables for jinja usage
-  - variables:
-      admins: !input user_group_admins
-      family: !input user_group_family
-      alexa_devices: !input alexa_group_devices
-      tts_devices: !input tts_group_devices
-      tts_provider: !input tts_provider
-      v_normal: !input volume_normal
-      v_critical: !input volume_critical
-    alias: gather input variables for jinja usage
-
-  # Prepare notify services for Admin and Family groups in parallel
-  - parallel:
-    # Admin devices for notify services
-    - sequence: 
-      - variables:
-          names_admins: >-
-            {% set out = [] %}
-            {% set d_admins = namespace(names=[]) %}
-            {% for device in (admins | default([], true) | list) %}
-              {% set name = device_attr(device, 'name') %}
-              {% set d_admins.names = d_admins.names + [name] %}
-              {% set notify_service = "notify.mobile_app_{}".format(name | slugify) %}
-              {% set out = out + [notify_service] %}
-            {% endfor %}
-            {{ d_admins.names }}
-        alias: names from admins for services
-
-      - variables:
-          notify_admins: >-
-            {{
-              names_admins
-              | default([], true)
-              | map('string')
-              | map('slugify')
-              | map('regex_replace', '^', 'notify.mobile_app_')
-              | list
-              | unique
-              | list
-            }}
-        alias: targets from admins for services
-
-    # Family devices for notify services
-    - sequence: 
-
-      - variables:    
-          names_family: >-
-            {% set out = [] %}
-            {% set d_family = namespace(names=[]) %}
-            {% for device in (family | default([], true) | list) %}
-              {% set name = device_attr(device, 'name') %}
-              {% set d_family.names = d_family.names + [name] %}
-              {% set notify_service = "notify.mobile_app_{}".format(name | slugify) %}
-              {% set out = out + [notify_service] %}
-            {% endfor %}
-            {{ d_family.names }}
-        alias: targets form famile for services
-
-      - variables:
-          notify_family: >-
-            {{
-              names_family
-              | default([], true)
-              | map('string')
-              | map('slugify')
-              | map('regex_replace', '^', 'notify.mobile_app_')
-              | list
-              | unique
-              | list
-            }}
-        alias: targets from family for services
-
-  - variables:
-      alexa_media_players: >-
-        {{
-          alexa_devices
-          | default([], true)
-          | map('regex_replace', '^notify\.', 'media_player.')
-          | map('regex_replace', '_sprechen$', '')
-          | list
-        }}
-    alias: alexa_media_players from notify.* (strip _sprechen)
-
-  # Combine all media players (Alexa + Google/TTS) into one list for volume control
-  - variables:
-      all_media_player: >-
-        {% set all = [] %}
-        {% if google_enabled %}
-          {% set all = all + (tts_devices | default([], true) | list) %}
-        {% endif %}
-        {% if alexa_enabled %}
-          {% set all = all + (alexa_media_players | default([], true) | list) %}
-        {% endif %}
-        {{ all | unique | list }}
-    alias: add Google/Alexa devices in var
-
-  # Target volume level
-  - variables:
-      target_volume: >-
-        {{ v_critical if critical_enabled else v_normal }}
-    alias: volume level based on critical flag
-
-  # Get the volume of the devices
-  - variables:
-      volumes_before: >-
-        {% set ns = namespace(d={}) %}
-        {% for mp in (all_media_player | default([], true) | list) %}
-          {% set v = state_attr(mp, 'volume_level') %}
-          {% if v is not none %}
-            {% set ns.d = dict(ns.d, **{ mp: (v | float) }) %}
-          {% endif %}
-        {% endfor %}
-        {{ ns.d }}
-    alias: remember previous volume per media_player
-
-  # raise volume only if current volume is lower
+- variables:
+    push_data: '{{ {''push'': {''sound'': {''name'': ''default'', ''critical'': 1,
+      ''volume'': 1.0}}} if critical_enabled else {} }}'
+  alias: push_data Variable, for the "Critical" channel on iPhones
+- variables:
+    admins: !input user_group_admins
+    family: !input user_group_family
+    alexa_devices: !input alexa_group_devices
+    tts_devices: !input tts_group_devices
+    tts_provider: !input tts_provider
+    v_normal: !input volume_normal
+    v_critical: !input volume_critical
+  alias: gather input variables for jinja usage
+- parallel:
+  - sequence:
+    - variables:
+        names_admins: "{% set out = [] %} {% set d_admins = namespace(names=[]) %}
+          {% for device in (admins | default([], true) | list) %}\n  {% set name =
+          device_attr(device, 'name') %}\n  {% set d_admins.names = d_admins.names
+          + [name] %}\n  {% set notify_service = \"notify.mobile_app_{}\".format(name
+          | slugify) %}\n  {% set out = out + [notify_service] %}\n{% endfor %} {{
+          d_admins.names }}"
+      alias: names from admins for services
+    - variables:
+        notify_admins: "{{\n  names_admins\n  | default([], true)\n  | map('string')\n
+          \ | map('slugify')\n  | map('regex_replace', '^', 'notify.mobile_app_')\n
+          \ | list\n  | unique\n  | list\n}}"
+      alias: targets from admins for services
+  - sequence:
+    - variables:
+        names_family: "{% set out = [] %} {% set d_family = namespace(names=[]) %}
+          {% for device in (family | default([], true) | list) %}\n  {% set name =
+          device_attr(device, 'name') %}\n  {% set d_family.names = d_family.names
+          + [name] %}\n  {% set notify_service = \"notify.mobile_app_{}\".format(name
+          | slugify) %}\n  {% set out = out + [notify_service] %}\n{% endfor %} {{
+          d_family.names }}"
+      alias: targets form famile for services
+    - variables:
+        notify_family: "{{\n  names_family\n  | default([], true)\n  | map('string')\n
+          \ | map('slugify')\n  | map('regex_replace', '^', 'notify.mobile_app_')\n
+          \ | list\n  | unique\n  | list\n}}"
+      alias: targets from family for services
+- variables:
+    alexa_media_players: "{{\n  alexa_devices\n  | default([], true)\n  | map('regex_replace',
+      '^notify\\.', 'media_player.')\n  | map('regex_replace', '_sprechen$', '')\n
+      \ | list\n}}"
+  alias: alexa_media_players from notify.* (strip _sprechen)
+- variables:
+    all_media_player: "{% set all = [] %} {% if google_enabled %}\n  {% set all =
+      all + (tts_devices | default([], true) | list) %}\n{% endif %} {% if alexa_enabled
+      %}\n  {% set all = all + (alexa_media_players | default([], true) | list) %}\n{%
+      endif %} {{ all | unique | list }}"
+  alias: add Google/Alexa devices in var
+- variables:
+    target_volume: '{{ v_critical if critical_enabled else v_normal }}'
+  alias: volume level based on critical flag
+- variables:
+    volumes_before: "{% set ns = namespace(d={}) %} {% for mp in (all_media_player
+      | default([], true) | list) %}\n  {% set v = state_attr(mp, 'volume_level')
+      %}\n  {% if v is not none %}\n    {% set ns.d = dict(ns.d, **{ mp: (v | float)
+      }) %}\n  {% endif %}\n{% endfor %} {{ ns.d }}"
+  alias: remember previous volume per media_player
+- repeat:
+    for_each: '{{ all_media_player }}'
+    sequence:
+    - variables:
+        current_volume: '{{ state_attr(repeat.item, ''volume_level'') | float(0) }}'
+    - choose:
+      - conditions:
+        - condition: template
+          value_template: '{{ current_volume < target_volume }}'
+        sequence:
+        - service: media_player.volume_set
+          target:
+            entity_id: '{{ repeat.item }}'
+          data:
+            volume_level: '{{ target_volume }}'
+  enabled: true
+- wait_template: ''
+  timeout: 00:00:01
+  continue_on_timeout: true
+- variables:
+    targets: "{% set out = [] %} {% if group_admins_enable %}\n  {% set out = out
+      + notify_admins %}\n{% endif %} {% if group_family_enable %}\n  {% set out =
+      out + notify_family %}\n{% endif %} {{ out | unique | list }}"
+- parallel:
   - repeat:
-      for_each: "{{ all_media_player }}"
+      for_each: '{{ targets }}'
       sequence:
-        - variables:
-            current_volume: "{{ state_attr(repeat.item, 'volume_level') | float(0) }}"
-        - choose:
-            - conditions:
-                - condition: template
-                  value_template: "{{ current_volume < target_volume }}"
-              sequence:
-                - service: media_player.volume_set
-                  target:
-                    entity_id: "{{ repeat.item }}"
-                  data:
-                    volume_level: "{{ target_volume }}"
+      - service: '{{ repeat.item }}'
+        data:
+          title: '{{ title }}'
+          message: '{{ message }}'
+          data: '{{ (field_data | default({}, true)) | combine(push_data) }}'
     enabled: true
-
-  # wait that all media devices initiated volume
-  - wait_template: >
-    timeout: "00:00:01"
-    continue_on_timeout: true
-  
-  # Set Var for all mobile notify devices
-  - variables:
-      targets: >-
-        {% set out = [] %}
-        {% if group_admins_enable %}
-          {% set out = out + notify_admins %}
-        {% endif %}
-        {% if group_family_enable %}
-          {% set out = out + notify_family %}
-        {% endif %}
-        {{ out | unique | list }}
-
-  # Complete notify block
-  - parallel:
-      # send notify on Mobiles
-      - repeat:
-          for_each: "{{ targets }}"
-          sequence:
-            - service: "{{ repeat.item }}"
-              data:
-                title: "{{ title }}"
-                message: "{{ message }}"
-                data: >-
-                  {{ (field_data | default({}, true)) | combine(push_data) }}
-        enabled: true
-        alias: Send notify on Mobiles
-
-      # Alexa announcement
-      - if:
-          - condition: template
-            value_template: "{{ alexa_enabled }}"
-        then:
-          - service: notify.send_message
-            target:
-              entity_id: "{{ alexa_devices | default([], true) | list }}"
-            data:
-              message: "{{ message }}"
-
-
-
-      # TTS announcement
-      - if:
-          - condition: template
-            value_template: "{{ google_enabled }}"
-        then:
-          - service: tts.speak
-            target:
-              entity_id: "{{ tts_provider }}"
-            data:
-              cache: true
-              media_player_entity_id: "{{ tts_devices }}"
-              message: "{{ message }}"
-
-
-  # Delay for Turn volume down.
-  - delay:
-      seconds: "{{ (message | length / 15) | int + 3 }}"
-    alias: wait function
-
-  - alias: Restore previous volume
-    repeat:
-      for_each: "{{ all_media_player }}"
-      sequence:
-        - variables:
-            prev: "{{ volumes_before.get(repeat.item) }}"
-        - choose:
-            - conditions:
-                - condition: template
-                  value_template: "{{ prev is not none }}"
-              sequence:
-                - service: media_player.volume_set
-                  target:
-                    entity_id: "{{ repeat.item }}"
-                  data:
-                    volume_level: "{{ prev | float }}"
-    enabled: true
-
+    alias: Send notify on Mobiles
+  - if:
+    - condition: template
+      value_template: '{{ alexa_enabled }}'
+    then:
+    - service: notify.send_message
+      target:
+        entity_id: '{{ alexa_devices | default([], true) | list }}'
+      data:
+        message: '{{ message }}'
+  - if:
+    - condition: template
+      value_template: '{{ google_enabled }}'
+    then:
+    - service: tts.speak
+      target:
+        entity_id: '{{ tts_provider }}'
+      data:
+        cache: true
+        media_player_entity_id: '{{ tts_devices }}'
+        message: '{{ message }}'
+- delay:
+    seconds: '{{ (message | length / 15) | int + 3 }}'
+  alias: wait function
+- alias: Restore previous volume
+  repeat:
+    for_each: '{{ all_media_player }}'
+    sequence:
+    - variables:
+        prev: '{{ volumes_before.get(repeat.item) }}'
+    - choose:
+      - conditions:
+        - condition: template
+          value_template: '{{ prev is not none }}'
+        sequence:
+        - service: media_player.volume_set
+          target:
+            entity_id: '{{ repeat.item }}'
+          data:
+            volume_level: '{{ prev | float }}'
+  enabled: true
 icon: mdi:message-badge
